@@ -12,6 +12,6 @@ import Testing
 // Mock service that throws an invalid URL error
 class MockFlickrSearchServiceInvalidURL: FlickrServiceProtocol {
     func fetchImages(for searchTerm: String) async throws -> [FlickrImage] {
-        throw FlickrServiceError.invalidURL
+        throw FlickrSearchServiceError.invalidURL
     }
 }

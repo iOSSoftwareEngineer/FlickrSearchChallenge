@@ -4,14 +4,13 @@
 //
 //  Created by Richard B. Rubin on 9/23/24.
 //
-
 import Foundation
 
-@MainActor
-class FlickrSearchViewModel: ObservableObject {
-    @Published var images: [FlickrImage] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+@Observable
+class FlickrSearchViewModel {
+    var images: [FlickrImage] = []
+    var isLoading: Bool = false
+    var errorMessage: String?
 
     private let flickrService: FlickrServiceProtocol
 
@@ -26,20 +25,20 @@ class FlickrSearchViewModel: ObservableObject {
         do {
             let fetchedImages = try await flickrService.fetchImages(for: searchTerm)
             images = fetchedImages
-        } catch FlickrServiceError.invalidURL {
+        } catch FlickrSearchServiceError.invalidURL {
             errorMessage = "Invalid URL. Please check your search term."
-        } catch FlickrServiceError.networkError(let error as URLError) {
+        } catch FlickrSearchServiceError.networkError(let error as URLError) {
             switch error.code {
             case .timedOut:
                 errorMessage = "Network error: The request timed out."
             default:
                 errorMessage = "Network error: \(error.localizedDescription). Please check your connection."
             }
-        } catch FlickrServiceError.invalidResponse {
+        } catch FlickrSearchServiceError.invalidResponse {
             errorMessage = "Invalid response from the server."
-        } catch FlickrServiceError.httpError(let statusCode) {
+        } catch FlickrSearchServiceError.httpError(let statusCode) {
             errorMessage = "HTTP error: Received status code \(statusCode)."
-        } catch FlickrServiceError.decodingError(let decodingError) {
+        } catch FlickrSearchServiceError.decodingError(let decodingError) {
             errorMessage = "Failed to decode the response: \(decodingError.localizedDescription)."
         } catch {
             errorMessage = "An unknown error occurred: \(error.localizedDescription)."

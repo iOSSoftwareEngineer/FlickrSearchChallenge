@@ -12,6 +12,6 @@ import Testing
 // Mock service that throws a decoding error
 class MockFlickrSearchServiceDecodingError: FlickrServiceProtocol {
     func fetchImages(for searchTerm: String) async throws -> [FlickrImage] {
-        throw FlickrServiceError.decodingError(DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Test decoding error")))
+        throw FlickrSearchServiceError.decodingError(DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Test decoding error")))
     }
 }

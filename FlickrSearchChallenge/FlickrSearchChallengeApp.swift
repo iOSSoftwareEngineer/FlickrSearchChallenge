@@ -12,6 +12,7 @@ struct FlickrSearchChallengeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(FlickrSearchViewModel()) // Inject the ViewModel into the environment
         }
     }
 }

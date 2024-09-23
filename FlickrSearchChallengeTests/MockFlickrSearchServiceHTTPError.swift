@@ -12,6 +12,6 @@ import Testing
 // Mock service that throws an HTTP error
 class MockFlickrSearchServiceHTTPError: FlickrServiceProtocol {
     func fetchImages(for searchTerm: String) async throws -> [FlickrImage] {
-        throw FlickrServiceError.httpError(500) // Internal Server Error
+        throw FlickrSearchServiceError.httpError(500) // Internal Server Error
     }
 }
