@@ -11,39 +11,9 @@ import Testing
 
 struct FlickrSearchChallengeTests {
 
-    class MockFlickrService: FlickrServiceProtocol {
-        func fetchImages(for searchTerm: String) async throws -> [FlickrImage] {
-            return [
-                FlickrImage(
-                    title: "Test Image 1",
-                    link: "http://example.com/1",
-                    media: FlickrImage.Media(m: "http://example.com/image1.jpg"),
-                    description: "A beautiful image of nature.",
-                    author: "John Doe",
-                    published: "2024-09-23T12:34:56Z"
-                ),
-                FlickrImage(
-                    title: "Test Image 2",
-                    link: "http://example.com/2",
-                    media: FlickrImage.Media(m: "http://example.com/image2.jpg"),
-                    description: "An amazing view of the mountains.",
-                    author: "Jane Smith",
-                    published: "2024-08-01T09:12:45Z"
-                )
-            ]
-        }
-    }
-
-    // Define a failure mock to simulate an error response
-    class MockFlickrServiceFailure: FlickrServiceProtocol {
-        func fetchImages(for searchTerm: String) async throws -> [FlickrImage] {
-            throw URLError(.badServerResponse)
-        }
-    }
-
     // Test for successful image fetch
     @Test func testFetchImagesSuccess() async throws {
-        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrService())
+        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrSearchService())
         await viewModel.searchImages(for: "test")
 
         await #expect(viewModel.images.count == 2)
@@ -52,13 +22,53 @@ struct FlickrSearchChallengeTests {
         await #expect(viewModel.errorMessage == nil)
     }
 
-    // Test for failure scenario
-    @Test func testFetchImagesFailure() async throws {
-        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrServiceFailure())
+    // Test for invalid URL error
+    @Test func testFetchImagesInvalidURLError() async throws {
+        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrSearchServiceInvalidURL())
         await viewModel.searchImages(for: "test")
 
         await #expect(viewModel.images.isEmpty == true)
         await #expect(viewModel.isLoading == false)
-        await #expect(viewModel.errorMessage != nil)
+        await #expect(viewModel.errorMessage == "Invalid URL. Please check your search term.")
+    }
+
+    // Test for network error (timeout)
+    @Test func testFetchImagesNetworkError() async throws {
+        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrSearchServiceNetworkError())
+        await viewModel.searchImages(for: "test")
+
+        await #expect(viewModel.images.isEmpty == true)
+        await #expect(viewModel.isLoading == false)
+        await #expect(viewModel.errorMessage == "Network error: The request timed out.")
+    }
+
+    // Test for HTTP error
+    @Test func testFetchImagesHTTPError() async throws {
+        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrSearchServiceHTTPError())
+        await viewModel.searchImages(for: "test")
+
+        await #expect(viewModel.images.isEmpty == true)
+        await #expect(viewModel.isLoading == false)
+        await #expect(viewModel.errorMessage == "HTTP error: Received status code 500.")
+    }
+
+    // Test for decoding error
+    @Test func testFetchImagesDecodingError() async throws {
+        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrSearchServiceDecodingError())
+        await viewModel.searchImages(for: "test")
+
+        await #expect(viewModel.images.isEmpty == true)
+        await #expect(viewModel.isLoading == false)
+        await #expect(viewModel.errorMessage == "Failed to decode the response: The data couldn’t be read because it isn’t in the correct format..")
+    }
+
+    // Test for invalid server response
+    @Test func testFetchImagesInvalidResponse() async throws {
+        let viewModel = await FlickrSearchViewModel(flickrService: MockFlickrSearchServiceInvalidResponse())
+        await viewModel.searchImages(for: "test")
+
+        await #expect(viewModel.images.isEmpty == true)
+        await #expect(viewModel.isLoading == false)
+        await #expect(viewModel.errorMessage == "Invalid response from the server.")
     }
 }
