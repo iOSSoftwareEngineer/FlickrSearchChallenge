@@ -1,0 +1,8 @@
+<dict>
+    <key>FlickrAPIBaseURL</key>
+    <string>https://api.flickr.com/services/feeds/photos_public.gne</string>
+    <key>Format</key>
+    <string>json</string>
+    <key>NoJSONCallback</key>
+    <string>1</string>
+</dict>
