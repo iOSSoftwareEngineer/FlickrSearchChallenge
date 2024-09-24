@@ -49,54 +49,46 @@ class FlickrSearchService: FlickrServiceProtocol {
         }
 
         do {
-            // Define a request with a timeout of 15 seconds
+            // Perform the network request
             let (data, response) = try await URLSession.shared.data(from: url, delegate: nil)
 
-            // Ensure the response is an HTTP response
-            guard let httpResponse = response as? HTTPURLResponse else {
+            // Ensure the response is an HTTP response with a successful status code
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
                 throw FlickrSearchServiceError.invalidResponse
-            }
-
-            // Check for successful HTTP status code
-            guard (200...299).contains(httpResponse.statusCode) else {
-                throw FlickrSearchServiceError.httpError(httpResponse.statusCode)
             }
 
             // Decode JSON and handle potential decoding errors
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
 
-            // Print the raw JSON string for debugging
-            let jsonString = String(data: data, encoding: .utf8)
-            print(jsonString ?? "No data")
+            // Debug: Print the raw JSON string
+//            if let jsonString = String(data: data, encoding: .utf8) {
+//                print(jsonString)
+//            }
 
-            do {
-                let result = try decoder.decode(FlickrResponse.self, from: data)
-                return result.items
-            } catch let DecodingError.keyNotFound(key, context) {
-                print("Missing key: \(key) in context: \(context.debugDescription)")
-                throw FlickrSearchServiceError.decodingError(DecodingError.keyNotFound(key, context))
-            } catch let DecodingError.typeMismatch(type, context) {
-                print("Type mismatch for type: \(type) in context: \(context.debugDescription)")
-                throw FlickrSearchServiceError.decodingError(DecodingError.typeMismatch(type, context))
-            } catch let DecodingError.valueNotFound(type, context) {
-                print("Value not found for type: \(type) in context: \(context.debugDescription)")
-                throw FlickrSearchServiceError.decodingError(DecodingError.valueNotFound(type, context))
-            } catch let DecodingError.dataCorrupted(context) {
-                print("Data corrupted in context: \(context.debugDescription)")
-                throw FlickrSearchServiceError.decodingError(DecodingError.dataCorrupted(context))
-            } catch {
-                print("Unknown error: \(error)")
-                throw FlickrSearchServiceError.decodingError(error)
-            }
+            let result = try decoder.decode(FlickrResponse.self, from: data)
+            return result.items
 
         } catch let error as URLError {
-            // Handle network-related errors
             throw FlickrSearchServiceError.networkError(error)
-        } catch let decodingError {
-            // Handle JSON decoding errors
+        } catch let decodingError as DecodingError {
+            // Handle specific decoding errors
+            switch decodingError {
+            case .keyNotFound(let key, let context):
+                print("Missing key: \(key) in context: \(context.debugDescription)")
+            case .typeMismatch(let type, let context):
+                print("Type mismatch for type: \(type) in context: \(context.debugDescription)")
+            case .valueNotFound(let type, let context):
+                print("Value not found for type: \(type) in context: \(context.debugDescription)")
+            case .dataCorrupted(let context):
+                print("Data corrupted in context: \(context.debugDescription)")
+            default:
+                print("Unknown decoding error: \(decodingError)")
+            }
             throw FlickrSearchServiceError.decodingError(decodingError)
         }
     }
 }
+
 
