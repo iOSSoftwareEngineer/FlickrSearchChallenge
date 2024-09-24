@@ -8,9 +8,7 @@
 import Foundation
 import Testing
 @testable import FlickrSearchChallenge
-import Foundation
-import Testing
-@testable import FlickrSearchChallenge
+
 
 struct FlickrSearchChallengeTests {
 
