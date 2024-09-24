@@ -25,12 +25,12 @@ struct ContentView: View {
             VStack {
                 // Search Bar
                 HStack {
-                    TextField("Enter search term (e.g., porcupine or forest, bird)", text: $searchTerm)
+                    TextField("Enter comma-separated search term(s)", text: $searchTerm)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding()
-                        .onChange(of: searchTerm) { newValue in
+                        .onChange(of: searchTerm) {
                             // Send the new value to the searchSubject
-                            searchSubject.send(newValue)
+                            searchSubject.send(searchTerm)
                         }
 
                     Button(action: {
