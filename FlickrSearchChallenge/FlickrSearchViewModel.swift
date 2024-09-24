@@ -4,13 +4,18 @@
 //
 //  Created by Richard B. Rubin on 9/23/24.
 //
+
 import Foundation
+import Combine
 
 @Observable
 class FlickrSearchViewModel {
     var images: [FlickrImage] = []
     var isLoading: Bool = false
     var errorMessage: String?
+
+    // Store Combine cancellables here
+    var cancellables = Set<AnyCancellable>()
 
     private let flickrService: FlickrServiceProtocol
 
@@ -24,26 +29,48 @@ class FlickrSearchViewModel {
 
         do {
             let fetchedImages = try await flickrService.fetchImages(for: searchTerm)
-            images = fetchedImages
+            
+            print("Fetched \(fetchedImages.count) images for: \(searchTerm)")  // Debugging
+            
+            // Ensure UI updates are on the main thread
+            await MainActor.run {
+                images = fetchedImages
+            }
         } catch FlickrSearchServiceError.invalidURL {
-            errorMessage = "Invalid URL. Please check your search term."
+            await MainActor.run {
+                errorMessage = "Invalid URL. Please check your search term."
+            }
         } catch FlickrSearchServiceError.networkError(let error as URLError) {
-            switch error.code {
-            case .timedOut:
-                errorMessage = "Network error: The request timed out."
-            default:
-                errorMessage = "Network error: \(error.localizedDescription). Please check your connection."
+            await MainActor.run {
+                switch error.code {
+                case .timedOut:
+                    errorMessage = "Network error: The request timed out."
+                default:
+                    errorMessage = "Network error: \(error.localizedDescription). Please check your connection."
+                }
             }
         } catch FlickrSearchServiceError.invalidResponse {
-            errorMessage = "Invalid response from the server."
+            await MainActor.run {
+                errorMessage = "Invalid response from the server."
+            }
         } catch FlickrSearchServiceError.httpError(let statusCode) {
-            errorMessage = "HTTP error: Received status code \(statusCode)."
+            await MainActor.run {
+                errorMessage = "HTTP error: Received status code \(statusCode)."
+            }
         } catch FlickrSearchServiceError.decodingError(let decodingError) {
-            errorMessage = "Failed to decode the response: \(decodingError.localizedDescription)."
+            await MainActor.run {
+                errorMessage = "Failed to decode the response: \(decodingError.localizedDescription)."
+            }
         } catch {
-            errorMessage = "An unknown error occurred: \(error.localizedDescription)."
+            await MainActor.run {
+                errorMessage = "An unknown error occurred: \(error.localizedDescription)."
+            }
         }
 
-        isLoading = false
+        // Ensure the loading state change happens on the main thread
+        await MainActor.run {
+            isLoading = false
+        }
     }
 }
+

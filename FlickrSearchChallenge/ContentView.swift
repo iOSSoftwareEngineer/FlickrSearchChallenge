@@ -6,14 +6,19 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @State private var searchTerm: String = ""
     @Environment(FlickrSearchViewModel.self) private var viewModel
-
+    
     let columns = [
         GridItem(.adaptive(minimum: 100))
     ]
+    
+    // Subject to handle the search term changes
+    @State private var searchSubject = PassthroughSubject<String, Never>()
+    private var debounceTime: TimeInterval = 0.5
 
     var body: some View {
         NavigationView {
@@ -23,10 +28,9 @@ struct ContentView: View {
                     TextField("Enter search term (e.g., porcupine or forest, bird)", text: $searchTerm)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding()
-                        .onSubmit {
-                            Task {
-                                await viewModel.searchImages(for: searchTerm)
-                            }
+                        .onChange(of: searchTerm) { newValue in
+                            // Send the new value to the searchSubject
+                            searchSubject.send(newValue)
                         }
 
                     Button(action: {
@@ -38,13 +42,13 @@ struct ContentView: View {
                     }
                     .padding()
                 }
-
+                
                 // Loading indicator
                 if viewModel.isLoading {
                     ProgressView("Loading images...")
                         .padding()
                 }
-
+                
                 // Grid of images
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 20) {
@@ -67,7 +71,7 @@ struct ContentView: View {
                     }
                     .padding()
                 }
-
+                
                 // Error message
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -76,10 +80,29 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Flickr Image Search")
+            .onAppear {
+                // Setup the debounce pipeline when the view appears
+                setupDebounce()
+            }
         }
+    }
+
+    // Setup the debounce logic for the search input
+    func setupDebounce() {
+        searchSubject
+            .debounce(for: .seconds(debounceTime), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { newTerm in
+                print("Searching for: \(newTerm)")  // Debugging: Check when search is triggered
+                Task {
+                    await viewModel.searchImages(for: newTerm)
+                }
+            }
+            .store(in: &viewModel.cancellables)  // Store the cancellables in the ViewModel
     }
 }
 
 #Preview {
     ContentView()
+        .environment(FlickrSearchViewModel())
 }
