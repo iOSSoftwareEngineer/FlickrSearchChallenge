@@ -10,8 +10,7 @@ import Combine
 
 struct ContentView: View {
     @State private var searchTerm: String = ""
-    @Environment(FlickrSearchViewModel.self)
-    private var viewModel
+    @Environment(FlickrSearchViewModel.self) private var viewModel
     
     let columns = [
         GridItem(.adaptive(minimum: 100))
